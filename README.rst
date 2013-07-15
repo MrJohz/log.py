@@ -18,6 +18,7 @@ How?
 Easy.  Just import, instantiate, and log.
 
 .. code:: python
+
     import log
 
     logger = log.Logger()
