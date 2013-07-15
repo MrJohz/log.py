@@ -25,3 +25,5 @@ Easy.  Just import, instantiate, and log.
     logger.add_output("stdout")
 
     logger.log("A simple log message.")
+
+That's it!
