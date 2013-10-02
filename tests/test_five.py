@@ -27,5 +27,10 @@ class TestFiveShim(unittest.TestCase):
     def test_is_py3(self):
         self.assertTrue(five.PY3)
 
-if __name__ == "__main__":
-    unittest.main()
+    @version_skip(2)
+    def test_stringio_py2(self):
+        self.assertEqual(five.StringIO, five.BytesIO)
+
+    @version_skip(3)
+    def test_stringio_py3(self):
+        self.assertEqual(five.StringIO, five.cStringIO)

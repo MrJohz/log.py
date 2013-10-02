@@ -61,37 +61,50 @@ class Output(object):
         # Set self.output
         if output in ['stdin', 'stdout', 'stderr']:  # Catch these seperately
             self.output = getattr(sys, output)
-        elif isinstance(output, basestring):            # Gave filename
+        elif isinstance(output, five.str):           # Gave filename
             self.output = open(output, kwargs.get("filemode", 'a'))
         else:                                        # Gave some filetype
             self.output = output
 
         # Set self.filters
-        filter_func = kwargs.get("filter", lambda tag: True)
-        self.filters = _get_list(filter_func)
+        filtr = kwargs.get("filter")
+        self.filters = [] if filtr is None else [filtr]
 
         filter_funcs = kwargs.get("filters", list())
         self.filters.extend(filter_funcs)
 
+        # If a message has no tags, should we accept it?
+        self.accept_empty = kwargs.get("accept_empty", True)
+
         # Set self.level
-        self.level = kwargs.get("level", level(DEFAULT_LEVEL))
+        self.level = kwargs.get("level", level(DEFAULT_LEVEL)) # fix this
+
+        self.format = kwargs.get('format', DEFAULT_FORMAT)
+        self.date_fmt = kwargs.get('date_fmt', DEFAULT_DATE_FORMAT)
+        if 'formatter' in kwargs:
+            self.formatter = kwargs['formatter']
 
     def check_valid(self, message):
         """A check to see if `message` should be written by this Output."""
-        true_tags = list()
-        for tag in message.tags:
-            for filter_func in self.filters:
-                if not filter_func(tag):
-                    break
-            else:
-                true_tags.append(True)
+        if (not message.tags) and not self.filters:
+            return True
 
-        if self.level(message.level):
-            return any(true_tags)
+        true_results = list()
+        for filtr in self.filters:
+            if not filtr(message):
+                return False
+
+        return True
+
+    def formatter(self, message):
+        time_string = message.datetime.strftime(self.date_fmt)
+        args = message.args()
+        args.update(datetime=time_string)
+        return self.format.format(**args)
 
     def write(self, message):
         """Writes `message` to `self.output`"""
-        self.output.write(message.line())
+        self.output.write(self.formatter(message))
         self.output.write(NEWLINE)
         try:
             self.output.flush()
@@ -110,14 +123,26 @@ class Message(object):
         self.level = level
         self.datetime = datetime.datetime.today()
 
+    def args(self):
+        return {'tags': self.tags,
+                'message': self.message,
+                'level': self.level,
+                'datetime': self.datetime}
+
+    def __str__(self):
+        return "<{clname} {message!r}>".format(clname = self.__class__.__name__, message=self.message)
+
+    __repr__ = __str__
+
 
 class Logger(object):
 
     instances = {}
 
-    def __new__(cls, name="root", *args, **kwargs):
+    def __new__(cls, name='root', *args, **kwargs):
         if name in cls.instances:
             return cls.instances[name]
+
         else:
             new = object.__new__(cls, *args, **kwargs)
             new.name = name
@@ -129,6 +154,8 @@ class Logger(object):
             self.outputs.extend(_get_list(kwargs.get("outputs", [])))
         else:
             self.outputs = _get_list(kwargs.get("outputs", []))
+
+        self.outputs.append(kwargs.get('output'))
 
         self.lock = Lock()
 

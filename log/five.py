@@ -9,7 +9,23 @@ PY3 = sys.version_info[0] == 3
 if PY3:
     str = str
 
+    import io
+    cStringIO = StringIO = io.StringIO
+    cBytesIO = BytesIO = io.BytesIO
+
 if PY2:
     str = basestring
+
+    import StringIO as _StringIO
+    BytesIO = StringIO = _StringIO.StringIO
+
+    try:
+        import cStringIO as _cStringIO
+
+    except ImportError:
+        cStringIO = StringIO
+
+    else:
+        cStringIO = _cStringIO.StringIO
 
 basestring = str
