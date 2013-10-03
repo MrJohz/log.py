@@ -37,8 +37,5 @@ class TestHelperFunctions(unittest.TestCase):
         self.assertEqual(log._if_none(5, list, sentinel), 5)
 
 
-
-
-
 if __name__ == "__main__":
     unittest.main()

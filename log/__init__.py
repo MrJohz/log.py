@@ -77,7 +77,7 @@ class Output(object):
         self.accept_empty = kwargs.get("accept_empty", True)
 
         # Set self.level
-        self.level = kwargs.get("level", level(DEFAULT_LEVEL)) # fix this
+        self.level = kwargs.get("level", level(DEFAULT_LEVEL))  # fix this
 
         self.format = kwargs.get('format', DEFAULT_FORMAT)
         self.date_fmt = kwargs.get('date_fmt', DEFAULT_DATE_FORMAT)
@@ -89,7 +89,6 @@ class Output(object):
         if (not message.tags) and not self.filters:
             return True
 
-        true_results = list()
         for filtr in self.filters:
             if not filtr(message):
                 return False
@@ -130,7 +129,8 @@ class Message(object):
                 'datetime': self.datetime}
 
     def __str__(self):
-        return "<{clname} {message!r}>".format(clname = self.__class__.__name__, message=self.message)
+        return "<{clname} {message!r}>".format(
+            clname=self.__class__.__name__, message=self.message)
 
     __repr__ = __str__
 
@@ -155,7 +155,8 @@ class Logger(object):
         else:
             self.outputs = _get_list(kwargs.get("outputs", []))
 
-        self.outputs.append(kwargs.get('output'))
+        if kwargs.get('output') is not None:
+            self.outputs.append(kwargs['output'])
 
         self.lock = Lock()
 
@@ -163,10 +164,11 @@ class Logger(object):
         self.outputs.extend(outputs)
 
     def add_output(self, output):
+        output = output if isinstance(output, Output) else Output(output)
         self.outputs.append(output)
 
     def _log(self, message, level, tags, args, kwargs):
-        message = Message(message, tags, level, args, kwargs)
+        message = Message(message, level, tags, args, kwargs)
         for output in self.outputs:
             if output.check_valid(message):
                 output.write(message)
